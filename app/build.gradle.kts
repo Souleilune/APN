@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,12 +8,24 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// Load local.properties file (this file is gitignored by default)
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+// Get properties or use defaults for development
+fun getLocalProperty(key: String, defaultValue: String = ""): String {
+    return localProperties.getProperty(key) ?: defaultValue
+}
+
 android {
-    namespace = "com.yourcompany.telemetry"
+    namespace = "com.example.apn"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.yourcompany.telemetry"
+        applicationId = "com.example.apn"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
@@ -21,6 +35,12 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Inject secrets into BuildConfig from local.properties
+        // These values are NOT included in version control
+        buildConfigField("String", "SUPABASE_URL", "\"${getLocalProperty("SUPABASE_URL", "https://your-project.supabase.co")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${getLocalProperty("SUPABASE_ANON_KEY", "your-anon-key")}\"")
+        buildConfigField("String", "BASE_URL", "\"${getLocalProperty("BASE_URL", "http://10.0.2.2:3000/")}\"")
     }
 
     buildTypes {
@@ -44,6 +64,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true  // Enable BuildConfig generation
     }
 
     composeOptions {
